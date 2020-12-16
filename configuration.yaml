@@ -1,0 +1,193 @@
+
+# Configure a default setup of Home Assistant (frontend, api, etc)
+default_config:
+
+sensor:
+  - platform: mqtt
+    state_topic: "soil/curry/"
+    unit_of_measurement: "%"
+  - platform: mqtt
+    state_topic: "soil/yucca/"
+    unit_of_measurement: "%"
+    name: yucca
+  - platform: template
+    sensors:
+      brightness:
+        friendly_name: "Brightness"
+        value_template: '{{ states.light.living_room_fan_light.attributes.brightness }}'
+      hvac_fan:
+        friendly_name: HVAC fan
+        value_template: '{{ states.climate.living_room.attributes.fan }}'
+      kitchen_cam_motion:
+        friendly_name: Kitchen Cam motion
+        value_template: '{{states.sensor.kitchen_motion.state | int }}'
+        unit_of_measurement: au
+      living_room_cam_motion:
+        friendly_name: Living Room Cam motion
+        value_template: '{{states.sensor.living_room_motion.state | int }}'
+        unit_of_measurement: au
+
+influxdb:
+  host: a0d7b954-influxdb
+  port: 8086
+  database: home_assistant
+  username: homeassistant
+  password: !secret influxdb_password
+  max_retries: 3
+  default_measurement: state
+  exclude:
+    domains:
+      - automation
+  component_config_glob:
+    sensor.*humidity:
+      override_measurement: humidity
+    sensor.*temperature:
+      override_measurement: temperature
+    sensor.*battery_level:
+      override_measurement: battery
+
+binary_sensor:
+  - platform: generic_hygrostat
+    name: Bathroom Hygrostat
+    sensor: sensor.zooz_zse40_4_in_1_sensor_relative_humidity
+    delta_trigger: 10 # Optional humidity swing to detect
+    target_offset: 3 # Optional dehumidification target offset
+    max_on_time: 3600 # Optional # Optional safety max on time
+  - platform: template
+    sensors:
+      bin_kitchen_cam_motion:
+        friendly_name: Kitchen Cam motion
+        value_template: '{{states.sensor.kitchen_motion.state | int > 250}}'
+        device_class: motion
+      bin_living_room_cam_motion:
+          friendly_name: Living Room Cam motion
+          value_template: '{{states.sensor.living_room_motion.state | int > 250}}'
+          device_class: motion
+      door_1_sensor:
+          friendly_name: Door #1
+          value_template: '{{states.sensor.aeotec_limited_unknown_type_0102_id_00bb_access_control.state | int == 22 }}'
+          device_class: door
+
+input_boolean:
+  set_vacation:
+    name: Toggle thermostat automations
+    icon: mdi:airplane-takeoff
+    initial: off
+
+#switch:
+#  - platform: command_line
+#    switches:
+#      camera_1:
+#        command_on: 'curl -k "http://192.168.0.8:7999/1/detection/start"'
+#        command_off: 'curl -k "http://192.168.0.8:7999/1/detection/pause"'
+#        command_state: 'curl -s "http://192.168.0.8:7999/1/detection/status"'
+#        value_template: '{{ "ACTIVE" in value }}'
+#        friendly_name: Motion Sensor Camera 1
+
+tplink:
+  discovery: true
+# Example configuration.yaml entry
+android_ip_webcam:
+  - host: 192.168.0.18
+    name: Living Room
+    username: ha
+    password: !secret webcam_password
+    sensors:
+      - audio_connections
+      - battery_level
+      - battery_temp
+      - battery_voltage
+      - light
+      - motion
+      - pressure
+      - proximity
+      - sound
+      - video_connections
+    switches:
+      - exposure_lock
+      - ffc
+      - focus
+      - gps_active
+      - motion_detect
+      - night_vision
+      - overlay
+      - torch
+      - whitebalance_lock
+      - video_recording
+  - host: 192.168.0.14
+    name: Kitchen
+    username: ha
+    password: !secret webcam_password
+    sensors:
+      - audio_connections
+      - battery_level
+      - battery_temp
+      - battery_voltage
+      - light
+      - motion
+      - pressure
+      - proximity
+      - sound
+      - video_connections
+    switches:
+      - exposure_lock
+      - ffc
+      - focus
+      - gps_active
+      - motion_detect
+      - night_vision
+      - overlay
+      - torch
+      - whitebalance_lock
+      - video_recording
+      
+device_tracker:
+  - platform: nmap_tracker
+    hosts: 192.168.0.2-255
+    track_new_devices: yes
+    interval_seconds: 60
+    consider_home: 300
+  - platform: google_maps
+    username: !secret google_email
+    max_gps_accuracy: 100
+
+timer:
+  circulate:
+    duration: '01:30:00'    
+tts:
+  - platform: google_translate
+
+notify:
+  - name: eric
+    platform: smtp
+    server: smtp.gmail.com
+    port: 587
+    timeout: 15
+    sender: emilliman4@gmail.com
+    encryption: starttls
+    username: emilliman4@gmail.com
+    password: !secret google_otp
+    recipient:
+      - 2314632031@txt.att.net
+      - 7168030273@txt.att.net
+    sender_name: Home assistant
+
+group: !include groups.yaml
+automation: !include automations.yaml
+script: !include scripts.yaml
+scene: !include scenes.yaml
+homeassistant:
+  customize: !include customize.yaml
+  time_zone: America/New_York
+lovelace:
+  mode: yaml
+  resources:
+    - url: /local/custom-lovelace/weather-card/weather-card.js
+      type: module
+    - url: /local/community/lovelace-layout-card/layout-card.js
+      type: module
+    - url: /local/community/mini-graph-card/mini-graph-card-bundle.js?v=0.9.4
+      type: module
+    - url: /local/community/ozw-network-visualization-card/ozw-network-visualization-card.js
+      type: module
+
