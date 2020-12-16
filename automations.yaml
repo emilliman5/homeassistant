@@ -1,0 +1,656 @@
+- id: '1597954592969'
+  alias: living room lights off
+  description: ''
+  trigger:
+  - entity_id: light.living_room_fan_light
+    for: '1'
+    from: 'on'
+    platform: state
+    to: 'off'
+  condition: []
+  action:
+  - device_id: c249349ee3a94656b848e7b0ab4cff56
+    domain: light
+    entity_id: light.living_room_lamp
+    type: turn_off
+  mode: single
+- id: brightness test
+  alias: living room lights on
+  trigger:
+  - entity_id: sensor.brightness
+    platform: state
+  action:
+  - entity_id: light.living_room_lamp
+    service: light.turn_on
+  - delay: 00:00:01
+  - data_template:
+      brightness: '{{ states.sensor.brightness.state }}'
+    entity_id: light.living_room_lamp
+    service: light.turn_on
+  mode: single
+- id: '1598838655224'
+  alias: Bathroom Hygrometer off
+  description: ''
+  trigger:
+  - entity_id: binary_sensor.bathroom_hygrostat
+    for: '1'
+    from: 'on'
+    platform: state
+    to: 'off'
+  condition: []
+  action:
+  - device_id: 5c5ac647515941cfb305d5f41cb243cc
+    domain: switch
+    entity_id: switch.bathroom_fan
+    type: turn_off
+  mode: single
+- id: '1599008240392'
+  alias: Turn on the lights when the sun is set
+  description: ''
+  trigger:
+  - entity_id: binary_sensor.guest_bedroom_fan_occupancy
+    for: '1'
+    from: 'off'
+    platform: state
+    to: 'on'
+  condition:
+  - condition: and
+    conditions:
+    - after: sunset
+      before: sunrise
+      condition: sun
+    - condition: state
+      entity_id: group.adults
+      state: home
+  action:
+  - brightness_pct: 75
+    device_id: d420a2ece5fb4f2b9577aff9f8e33a48
+    domain: light
+    entity_id: light.guest_bedroom_fan_light
+    type: turn_on
+  mode: single
+- id: '1599144180936'
+  alias: Grow light on
+  description: ''
+  trigger:
+  - platform: time
+    at: '7:00'
+  condition: []
+  action:
+  - device_id: 2b54309b536a419b9cc1677bb4a3d42e
+    domain: switch
+    entity_id: switch.grow_light
+    type: turn_on
+  - type: turn_on
+    device_id: e8bd62689e55ee2728fe28ab43461612
+    entity_id: switch.jasco_products_14282_plug_in_two_outlet_smart_switch_switch
+    domain: switch
+  mode: single
+- id: '1599144239480'
+  alias: Grow light off
+  description: ''
+  trigger:
+  - event: sunset
+    platform: sun
+    offset: '3600'
+  condition: []
+  action:
+  - device_id: 2b54309b536a419b9cc1677bb4a3d42e
+    domain: switch
+    entity_id: switch.grow_light
+    type: turn_off
+  - type: turn_off
+    device_id: e8bd62689e55ee2728fe28ab43461612
+    entity_id: switch.jasco_products_14282_plug_in_two_outlet_smart_switch_switch
+    domain: switch
+  mode: single
+- id: '1599705144583'
+  alias: Restart Higgins
+  description: ''
+  trigger:
+  - platform: numeric_state
+    entity_id: sensor.higgins_battery_level
+    above: '30'
+    below: '100'
+    for: '2'
+  condition:
+  - condition: and
+    conditions:
+    - condition: state
+      entity_id: vacuum.higgins
+      attribute: status
+      state: charging
+    - condition: state
+      entity_id: vacuum.higgins
+      state: paused
+  action:
+  - device_id: 620b64f588594796a6ce53c4d95b9c9d
+    domain: vacuum
+    entity_id: vacuum.higgins
+    type: clean
+  mode: single
+- id: '1599709144583'
+  alias: Start Higgins while we are away
+  trigger:
+  - entity_id: group.adults
+    for: 0:10:00
+    from: home
+    platform: state
+    to: not_home
+  condition:
+  - condition: and
+    conditions:
+    - after: 09:00:00
+      before: '17:00:00'
+      condition: time
+    - condition: template
+      value_template: '{{ as_timestamp(now()) - as_timestamp(states.vacuum.higgins.last_changed)
+        | int > 129600 }}'
+  action:
+  - device_id: 620b64f588594796a6ce53c4d95b9c9d
+    domain: vacuum
+    entity_id: vacuum.higgins
+    type: clean
+  mode: single
+- id: '1598838655334'
+  alias: Half Bath fan off
+  description: ''
+  trigger:
+  - device_id: 1ab07e962477463695647afcb7067b1d
+    domain: switch
+    entity_id: switch.half_bath_fan
+    platform: device
+    type: turned_on
+    for:
+      hours: 0
+      minutes: 30
+      seconds: 0
+  condition: []
+  action:
+  - device_id: 1ab07e962477463695647afcb7067b1d
+    domain: switch
+    entity_id: switch.half_bath_fan
+    type: turn_off
+  mode: single
+- id: '1599921967882'
+  alias: Turn thermostat off if door is open
+  description: ''
+  trigger:
+  - entity_id: binary_sensor.back_door
+    for: '600'
+    from: 'off'
+    platform: state
+    to: 'on'
+  condition: []
+  action:
+  - device_id: 23d0df210e4211eb8482df3c26c90e4b
+    domain: climate
+    entity_id: climate.living_room
+    type: set_preset_mode
+    preset_mode: Away
+  mode: single
+- id: '1599922369116'
+  alias: Turn thermostat on when doors are closed
+  description: ''
+  trigger:
+  - entity_id: binary_sensor.back_door
+    from: 'on'
+    platform: state
+    to: 'off'
+    for: '10'
+  condition:
+  - condition: state
+    entity_id: group.adults
+    state: home
+  action:
+  - data:
+      entity_id: climate.living_room
+      resume_all: 'true'
+    service: ecobee.resume_program
+  mode: single
+- id: '1599956190241'
+  alias: 'Bathroom Hygrometer on '
+  description: ''
+  trigger:
+  - entity_id: binary_sensor.bathroom_hygrostat
+    from: 'off'
+    platform: state
+    to: 'on'
+  condition: []
+  action:
+  - device_id: 5c5ac647515941cfb305d5f41cb243cc
+    domain: switch
+    entity_id: switch.bathroom_fan
+    type: turn_on
+  mode: single
+- id: '1599961675374'
+  alias: Intrusion detection
+  description: ''
+  trigger:
+  - entity_id: group.adults
+    for: '900'
+    from: home
+    platform: state
+    to: not_home
+  condition:
+  - condition: or
+    conditions:
+    - condition: state
+      entity_id: binary_sensor.back_door
+      state: 'on'
+    - condition: state
+      entity_id: binary_sensor.front_door
+      state: 'on'
+  action:
+  - data:
+      message: The doors are open and no one is home.
+    service: notify.eric
+  mode: single
+- id: '1600034487254'
+  alias: Set thermostat to Away
+  description: ''
+  trigger:
+  - entity_id: group.adults
+    for: '1200'
+    from: 'on'
+    platform: state
+    to: 'off'
+  condition: []
+  action:
+  - device_id: 23d0df210e4211eb8482df3c26c90e4b
+    domain: climate
+    entity_id: climate.living_room
+    type: set_preset_mode
+    preset_mode: Away
+  mode: single
+- id: '1600034758234'
+  alias: Resume thermostat schedule
+  description: ''
+  trigger:
+  - entity_id: group.adults
+    for: '300'
+    from: 'off'
+    platform: state
+    to: 'on'
+  condition:
+  - condition: and
+    conditions:
+    - condition: state
+      entity_id: binary_sensor.back_door
+      state: 'off'
+    - condition: state
+      entity_id: binary_sensor.front_door
+      state: 'off'
+  action:
+  - data:
+      entity_id: climate.living_room
+      resume_all: 'true'
+    service: ecobee.resume_program
+  mode: single
+- id: '1600192379694'
+  alias: Set vacation mode
+  description: ''
+  trigger:
+  - entity_id: input_boolean.set_vacation
+    from: 'off'
+    platform: state
+    to: 'on'
+  condition: []
+  action:
+  - data: {}
+    entity_id: automation.bedtime_bedroom_fan
+    service: automation.turn_off
+  - data: {}
+    entity_id: automation.resume_thermostat_schedule
+    service: automation.turn_off
+  - data: {}
+    entity_id: automation.set_thermostat_to_away
+    service: automation.turn_off
+  - data: {}
+    entity_id: automation.turn_thermostat_off_if_door_is_open
+    service: automation.turn_off
+  mode: single
+- id: '1600193281444'
+  alias: Resume thermostat automation
+  description: ''
+  trigger:
+  - entity_id: input_boolean.set_vacation
+    from: 'on'
+    platform: state
+    to: 'off'
+  condition: []
+  action:
+  - data: {}
+    entity_id: automation.new_automation
+    service: automation.turn_on
+  - data: {}
+    entity_id: automation.resume_thermostat_schedule
+    service: automation.turn_on
+  - data: {}
+    entity_id: automation.set_thermostat_to_away
+    service: automation.turn_on
+  - data: {}
+    entity_id: automation.turn_thermostat_off_if_door_is_open
+    service: automation.turn_on
+  mode: single
+- id: '1601514883198'
+  alias: wallmote test
+  description: ''
+  trigger:
+  - platform: event
+    event_type: zwave.scene_activated
+    event_data:
+      entity: zwave.aeon_labs_zw129_wallmote_duo
+      scene_id: 1
+      scene_data: 0
+  condition: []
+  action:
+  - type: turn_on
+    device_id: 2b54309b536a419b9cc1677bb4a3d42e
+    entity_id: switch.grow_light
+    domain: switch
+  mode: single
+- id: '1602724841299'
+  alias: Bath fan timer
+  description: ''
+  trigger:
+  - platform: device
+    type: turned_on
+    device_id: 5c5ac647515941cfb305d5f41cb243cc
+    entity_id: switch.bathroom_fan
+    domain: switch
+    for:
+      hours: 0
+      minutes: 30
+      seconds: 0
+  condition:
+  - condition: state
+    entity_id: binary_sensor.bathroom_hygrostat
+    state: 'off'
+  action:
+  - type: turn_off
+    device_id: 5c5ac647515941cfb305d5f41cb243cc
+    entity_id: switch.bathroom_fan
+    domain: switch
+  mode: single
+- id: '1603074588420'
+  alias: Start timers
+  description: ''
+  trigger:
+  - platform: homeassistant
+    event: start
+  condition: []
+  action:
+  - service: timer.start
+    data:
+      entity_id: all
+  mode: single
+- id: '1603108161630'
+  alias: Restart circulate timer
+  description: ''
+  trigger:
+  - platform: event
+    event_type: timer.finished
+    event_data:
+      entity_id: timer.circulate
+  condition: []
+  action:
+  - service: timer.start
+    data: {}
+    entity_id: timer.circulate
+  mode: single
+- id: '1603108414081'
+  alias: Circulate bedroom air
+  description: ''
+  trigger:
+  - platform: event
+    event_type: timer.finished
+    event_data:
+      entity_id: timer.circulate
+  condition:
+  - condition: or
+    conditions:
+    - condition: state
+      entity_id: group.adults
+      state: away
+    - condition: and
+      conditions:
+      - condition: state
+        entity_id: binary_sensor.bedroom_occupancy
+        state: 'off'
+  action:
+  - service: fan.turn_on
+    data:
+      speed: 4
+    entity_id: fan.master_bedroom_fan
+  - wait_template: '300'
+  - service: fan.turn_off
+    data:
+      entity_id: fan.master_bedroom_fan
+    entity_id: fan.master_bedroom_fan
+  mode: single
+- id: '1605308986553'
+  alias: 'daytime bedroom fan direction '
+  description: ''
+  trigger:
+  - platform: time
+    at: '7:00'
+  condition:
+  - condition: device
+    device_id: 23d0df210e4211eb8482df3c26c90e4b
+    domain: climate
+    entity_id: climate.living_room
+    type: is_hvac_mode
+    hvac_mode: heat
+  action:
+  - service: fan.set_direction
+    data:
+      direction: reverse
+    entity_id: fan.master_bedroom_fan
+  mode: single
+- id: '1605309538518'
+  alias: bedtime bedroom fan
+  description: ''
+  trigger:
+  - platform: time
+    at: '21:00'
+  condition:
+  - condition: state
+    entity_id: group.adults
+    state: home
+  action:
+  - service: fan.set_direction
+    data:
+      direction: forward
+    entity_id: fan.master_bedroom_fan
+  - service: fan.turn_on
+    data: {}
+    entity_id: fan.master_bedroom_fan
+  - service: fan.set_speed
+    data:
+      speed: 5
+    entity_id: fan.master_bedroom_fan
+  mode: single
+- id: '1605744245276'
+  alias: Living room cam outlet on
+  description: ''
+  trigger:
+  - platform: numeric_state
+    below: '20'
+    entity_id: sensor.living_room_battery_level
+  - platform: device
+    type: turned_off
+    device_id: 5490beff01e611eba306a9a88a73b94b
+    entity_id: switch.bedroom_grow_light
+    domain: switch
+    for:
+      hours: 2
+      minutes: 30
+      seconds: 0
+  condition: []
+  action:
+  - type: turn_on
+    device_id: 5490beff01e611eba306a9a88a73b94b
+    entity_id: switch.bedroom_grow_light
+    domain: switch
+  mode: single
+- id: '1605744508956'
+  alias: Living room cam outlet off
+  description: ''
+  trigger:
+  - platform: numeric_state
+    entity_id: sensor.living_room_battery_level
+    above: '90'
+  condition: []
+  action:
+  - type: turn_off
+    device_id: 5490beff01e611eba306a9a88a73b94b
+    entity_id: switch.bedroom_grow_light
+    domain: switch
+  mode: single
+- id: '1605828473021'
+  alias: Kitchen cam outlet on
+  description: ''
+  trigger:
+  - platform: numeric_state
+    below: '20'
+    entity_id: sensor.kitchen_battery_level
+  - platform: state
+    entity_id: switch.bedroom_grow_light_2
+    from: 'on'
+    to: 'off'
+    for: '14400'
+  condition: []
+  action:
+  - type: turn_on
+    device_id: 6d047ee116fb11ebb04e1b6f6fb34447
+    entity_id: switch.bedroom_grow_light_2
+    domain: switch
+  mode: single
+- id: '1605828531001'
+  alias: Kitchen cam outlet off
+  description: ''
+  trigger:
+  - platform: numeric_state
+    entity_id: sensor.kitchen_battery_level
+    above: '90'
+  condition: []
+  action:
+  - type: turn_off
+    device_id: 6d047ee116fb11ebb04e1b6f6fb34447
+    entity_id: switch.bedroom_grow_light_2
+    domain: switch
+  mode: single
+- id: '1606658419946'
+  alias: Christmas lights on
+  description: ''
+  trigger:
+  - platform: time
+    at: '7:00:00'
+  condition:
+  - condition: state
+    entity_id: group.adults
+    state: home
+  action:
+  - type: turn_on
+    device_id: 24c0ecadb9d4cbb9dc2b8bc2f790840a
+    entity_id: switch.outlet_3
+    domain: switch
+  mode: single
+- id: '1606684179742'
+  alias: Christmas lights off
+  description: ''
+  trigger:
+  - platform: time
+    at: '21:00:00'
+  condition: []
+  action:
+  - type: turn_off
+    device_id: 24c0ecadb9d4cbb9dc2b8bc2f790840a
+    entity_id: switch.outlet_3
+    domain: switch
+  mode: single
+- id: '1606684838157'
+  alias: Webcam Nightmode on
+  description: ''
+  trigger:
+  - platform: sun
+    event: sunrise
+  - platform: sun
+    event: sunset
+  condition: []
+  action:
+  - service: switch.turn_on
+    data: {}
+    entity_id: switch.kitchen_night_vision
+  - service: switch.turn_on
+    data: {}
+    entity_id: switch.living_room_night_vision
+  mode: single
+- id: '1606684974929'
+  alias: Motion Video capture on
+  description: ''
+  trigger:
+  - platform: state
+    from: 'off'
+    entity_id: binary_sensor.ip_cam_2_motion
+    to: 'on'
+    for: '1'
+  - platform: state
+    entity_id: binary_sensor.ip_cam_motion
+    from: 'off'
+    to: 'on'
+    for: '1'
+  - platform: state
+    entity_id: binary_sensor.living_room_motion_detector
+    from: 'off'
+    to: 'on'
+    for: '1'
+  condition:
+  - condition: state
+    entity_id: group.adults
+    state: away
+  action:
+  - service: switch.turn_on
+    data: {}
+    entity_id: switch.ip_webcam_video_recording
+  - service: switch.turn_on
+    data: {}
+    entity_id: switch.ip_webcam_video_recording_2
+  mode: single
+- id: '1606685011745'
+  alias: Motion Video capture off
+  description: ''
+  trigger:
+  - platform: state
+    entity_id: group.adults
+    from: away
+    to: home
+    for: '600'
+  condition: []
+  action:
+  - service: switch.turn_off
+    data: {}
+    entity_id: switch.ip_webcam_video_recording
+  - service: switch.turn_off
+    data: {}
+    entity_id: switch.ip_webcam_video_recording_2
+  mode: single
+- id: '1607294671653'
+  alias: Webcam Nightmode off
+  description: ''
+  trigger:
+  - platform: sun
+    event: sunset
+  - platform: sun
+    event: sunrise
+    offset: '3600'
+  condition: []
+  action:
+  - service: switch.turn_off
+    data: {}
+    entity_id: switch.kitchen_night_vision
+  - service: switch.turn_off
+    data: {}
+    entity_id: switch.living_room_night_vision
+  mode: single
