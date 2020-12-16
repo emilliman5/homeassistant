@@ -1,0 +1,121 @@
+title: Home
+views: 
+  - badges:
+    - entity: binary_sensor.updater
+    - entity: person.eric
+    - entity: person.neah
+    - entity: group.adults
+    - entity: sun.sun
+    cards:
+    - entities:
+        - entity: sensor.living_room_temperature
+          name: Living Room
+        - entity: sensor.zooz_zse40_4_in_1_sensor_temperature
+          name: Bathroom
+        - entity: sensor.aeon_labs_zw100_multisensor_6_temperature
+          name: Basement
+        - entity: sensor.kitchen_temperature
+          name: Kitchen
+        - entity: sensor.bedroom_temperature
+          name: Bedroom
+        - entity: sensor.office_temperature
+          name: Office
+      title: Temperature
+      points_per_hour: 5
+      height: 200
+      line_width: 3
+      type: custom:mini-graph-card
+    - entities:
+      - entity: sensor.hvac_fan
+      - entity: binary_sensor.bathroom_hygrostat
+      type: history-graph
+      hours_to_show: 8
+      refresh_interval: 0
+    - entities:
+        - entity: binary_sensor.back_door
+        - entity: binary_sensor.front_door
+        - entity: binary_sensor.door_1_sensor
+          name: Basement Door
+      title: Entrances
+      type: entities
+    - entity: weather.home
+      type: custom:weather-card
+      icons: "/local/custom-lovelace/weather-card/icons/"
+    - entities:
+        - entity: sensor.speedtest_download
+        - entity: sensor.speedtest_upload
+        - entity: sensor.speedtest_ping
+      title: Internet Speed
+      type: entities
+    - entities:
+        - entity: sensor.living_room_humidity
+          name: Living Room
+        - entity: sensor.zooz_zse40_4_in_1_sensor_relative_humidity
+          name: Bathroom
+        - entity: sensor.aeon_labs_zw100_multisensor_6_relative_humidity
+          name: Basement
+      title: Humidity
+      points_per_hour: 6
+      height: 200
+      line_width: 3
+      type: custom:mini-graph-card
+    - entities:
+        - entity: vacuum.higgins
+        - entity: binary_sensor.higgins_bin_full
+        - entity: sensor.higgins_battery_level
+      title: Vacuum
+      type: entities
+    - entities:
+        - entity: binary_sensor.living_room_fan_occupancy
+        - entity: binary_sensor.living_room_occupancy
+        - entity: binary_sensor.guest_bedroom_fan_occupancy
+        - entity: binary_sensor.office_occupancy
+        - entity: binary_sensor.bedroom_occupancy
+        - entity: binary_sensor.master_bedroom_fan_occupancy
+        - entity: binary_sensor.kitchen_occupancy
+      title: Room Occupancy
+      type: entities
+    - entities:
+        - entity: sensor.living_room_battery_level
+          name: Living Room Cam
+        - entity: sensor.kitchen_battery_level
+          name: Kitchen Cam
+        - entity: sensor.zooz_zse40_4_in_1_sensor_battery_level
+          name: Bathroom Sensor
+        - entity: sensor.aeotec_limited_unknown_type_0102_id_00bb_battery_level
+          name: Door sensor #1
+      title: Battery Levels
+      type: entities
+    - entities:
+      - entity: sensor.kitchen_cam_motion
+      - entity: sensor.living_room_cam_motion
+      title: Motion
+      type: history-graph
+    - entities:
+        - entity: sensor.aeon_labs_zw100_multisensor_6_burglar
+        - entity: sensor.zooz_zse40_4_in_1_sensor_burglar
+        - entity: binary_sensor.living_room_motion_detector
+        - entity: binary_sensor.bin_kitchen_cam_motion
+        - entity: binary_sensor.bin_living_room_cam_motion
+      type: entities
+      title: Motion Sensors
+    - entities:
+        - entity: switch.kitchen_motion_detection
+        - entity: switch.kitchen_night_vision
+        - entity: switch.kitchen_torch
+        - entity: switch.kitchen_video_recording
+        - entity: switch.kitchen_gps_active
+        - entity: switch.kitchen_white_balance_lock
+      type: entities
+      title: Kitchen Camera
+    - entities:
+        - entity: switch.living_room_motion_detection
+        - entity: switch.living_room_night_vision
+        - entity: switch.living_room_torch
+        - entity: switch.living_room_video_recording
+        - entity: switch.living_room_gps_active
+        - entity: switch.living_room_white_balance_lock
+      type: entities
+      title: Living Room Camera
+    title: Home
+    path: default_view
