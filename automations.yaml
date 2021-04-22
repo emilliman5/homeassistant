@@ -74,7 +74,7 @@
   description: ''
   trigger:
   - platform: time
-    at: '7:00'
+    at: '7:00:00'
   condition: []
   action:
   - device_id: 2b54309b536a419b9cc1677bb4a3d42e
@@ -92,7 +92,7 @@
   trigger:
   - event: sunset
     platform: sun
-    offset: '3600'
+    offset: '0'
   condition: []
   action:
   - device_id: 2b54309b536a419b9cc1677bb4a3d42e
@@ -124,7 +124,7 @@
       entity_id: vacuum.higgins
       state: paused
   action:
-  - device_id: 620b64f588594796a6ce53c4d95b9c9d
+  - device_id: afb31d91ab6447b46bec24bd8ad85880
     domain: vacuum
     entity_id: vacuum.higgins
     type: clean
@@ -133,19 +133,28 @@
   alias: Start Higgins while we are away
   trigger:
   - entity_id: group.adults
-    for: 0:10:00
     from: home
     platform: state
     to: not_home
+    for: '300'
   condition:
   - condition: and
     conditions:
     - after: 09:00:00
       before: '17:00:00'
       condition: time
+      weekday:
+      - mon
+      - tue
+      - wed
+      - thu
+      - fri
     - condition: template
-      value_template: '{{ as_timestamp(now()) - as_timestamp(states.vacuum.higgins.last_changed)
-        | int > 129600 }}'
+      value_template: "{{ as_timestamp(now()) - as_timestamp(state_attr('automation.start_higgins_while_we_are_away',\n\
+        \                                 'last_triggered')) | int > 129600}}"
+    - condition: state
+      entity_id: binary_sensor.higgins_bin_full
+      state: 'off'
   action:
   - device_id: 620b64f588594796a6ce53c4d95b9c9d
     domain: vacuum
@@ -207,6 +216,9 @@
       entity_id: climate.living_room
       resume_all: 'true'
     service: ecobee.resume_program
+  - service: input_boolean.turn_off
+    data: {}
+    entity_id: input_boolean.resume_thermostat
   mode: single
 - id: '1599956190241'
   alias: 'Bathroom Hygrometer on '
@@ -227,34 +239,39 @@
   alias: Intrusion detection
   description: ''
   trigger:
-  - entity_id: group.adults
-    for: '900'
-    from: home
+  - entity_id: binary_sensor.front_door
+    for: '3'
+    from: 'off'
     platform: state
-    to: not_home
+    to: 'on'
+  - platform: state
+    entity_id: binary_sensor.back_door
+    from: 'off'
+    to: 'on'
+    for: '3'
+  - platform: state
+    entity_id: binary_sensor.door_1_sensor
+    from: 'off'
+    to: 'on'
+    for: '300'
   condition:
-  - condition: or
-    conditions:
-    - condition: state
-      entity_id: binary_sensor.back_door
-      state: 'on'
-    - condition: state
-      entity_id: binary_sensor.front_door
-      state: 'on'
+  - condition: state
+    entity_id: group.adults
+    state: not_home
   action:
   - data:
       message: The doors are open and no one is home.
     service: notify.eric
   mode: single
 - id: '1600034487254'
-  alias: Set thermostat to Away
+  alias: Set thermostat away when adults are away
   description: ''
   trigger:
   - entity_id: group.adults
-    for: '1200'
-    from: 'on'
+    from: home
     platform: state
-    to: 'off'
+    to: away
+    for: '600'
   condition: []
   action:
   - device_id: 23d0df210e4211eb8482df3c26c90e4b
@@ -264,23 +281,15 @@
     preset_mode: Away
   mode: single
 - id: '1600034758234'
-  alias: Resume thermostat schedule
+  alias: Resume thermostat schedule when returning home
   description: ''
   trigger:
   - entity_id: group.adults
-    for: '300'
-    from: 'off'
+    from: not_home
     platform: state
-    to: 'on'
-  condition:
-  - condition: and
-    conditions:
-    - condition: state
-      entity_id: binary_sensor.back_door
-      state: 'off'
-    - condition: state
-      entity_id: binary_sensor.front_door
-      state: 'off'
+    to: home
+    for: '60'
+  condition: []
   action:
   - data:
       entity_id: climate.living_room
@@ -311,8 +320,8 @@
     service: automation.turn_off
   mode: single
 - id: '1600193281444'
-  alias: Resume thermostat automation
-  description: ''
+  alias: Resume thermostat automations
+  description: Turn off vacation mode
   trigger:
   - entity_id: input_boolean.set_vacation
     from: 'on'
@@ -320,9 +329,6 @@
     to: 'off'
   condition: []
   action:
-  - data: {}
-    entity_id: automation.new_automation
-    service: automation.turn_on
   - data: {}
     entity_id: automation.resume_thermostat_schedule
     service: automation.turn_on
@@ -334,21 +340,40 @@
     service: automation.turn_on
   mode: single
 - id: '1601514883198'
-  alias: wallmote test
+  alias: Fans off for cooking
   description: ''
   trigger:
   - platform: event
     event_type: zwave.scene_activated
     event_data:
-      entity: zwave.aeon_labs_zw129_wallmote_duo
+      entity_id: zwave.aeon_labs_zw129_wallmote_duo_2
+      node_id: 10
       scene_id: 1
       scene_data: 0
+    context: {}
+  - platform: event
+    event_type: zwave.scene_activated
+    event_data:
+      entity_id: zwave.aeon_labs_zw129_wallmote_duo_2
+      node_id: 10
+      scene_id: 2
+      scene_data: 0
+    context: {}
   condition: []
   action:
-  - type: turn_on
-    device_id: 2b54309b536a419b9cc1677bb4a3d42e
-    entity_id: switch.grow_light
-    domain: switch
+  - service: scene.create
+    data:
+      scene_id: before_cooking
+      snapshot_entities:
+      - fan.guest_bedroom_fan
+      - fan.living_room_fan
+      - fan.master_bedroom_fan
+  - service: fan.turn_off
+    data:
+      entity_id:
+      - fan.guest_bedroom_fan
+      - fan.living_room_fan
+      - fan.master_bedroom_fan
   mode: single
 - id: '1602724841299'
   alias: Bath fan timer
@@ -403,18 +428,22 @@
   alias: Circulate bedroom air
   description: ''
   trigger:
-  - platform: event
-    event_type: timer.finished
-    event_data:
-      entity_id: timer.circulate
+  - platform: state
+    entity_id: climate.living_room
+    attribute: fan
+    from: 'off'
+    to: 'on'
   condition:
-  - condition: or
+  - condition: and
     conditions:
     - condition: state
-      entity_id: group.adults
-      state: away
-    - condition: and
+      entity_id: fan.living_room_fan
+      state: 'off'
+    - condition: or
       conditions:
+      - condition: state
+        entity_id: group.adults
+        state: away
       - condition: state
         entity_id: binary_sensor.bedroom_occupancy
         state: 'off'
@@ -422,30 +451,12 @@
   - service: fan.turn_on
     data:
       speed: 4
+      direction: reverse
     entity_id: fan.master_bedroom_fan
   - wait_template: '300'
   - service: fan.turn_off
     data:
       entity_id: fan.master_bedroom_fan
-    entity_id: fan.master_bedroom_fan
-  mode: single
-- id: '1605308986553'
-  alias: 'daytime bedroom fan direction '
-  description: ''
-  trigger:
-  - platform: time
-    at: '7:00'
-  condition:
-  - condition: device
-    device_id: 23d0df210e4211eb8482df3c26c90e4b
-    domain: climate
-    entity_id: climate.living_room
-    type: is_hvac_mode
-    hvac_mode: heat
-  action:
-  - service: fan.set_direction
-    data:
-      direction: reverse
     entity_id: fan.master_bedroom_fan
   mode: single
 - id: '1605309538518'
@@ -468,8 +479,9 @@
     entity_id: fan.master_bedroom_fan
   - service: fan.set_speed
     data:
-      speed: 5
-    entity_id: fan.master_bedroom_fan
+      speed: '3'
+    target:
+      entity_id: fan.master_bedroom_fan
   mode: single
 - id: '1605744245276'
   alias: Living room cam outlet on
@@ -477,15 +489,15 @@
   trigger:
   - platform: numeric_state
     below: '20'
-    entity_id: sensor.living_room_battery_level
+    entity_id: sensor.camera_2_battery_level
   - platform: device
     type: turned_off
     device_id: 5490beff01e611eba306a9a88a73b94b
     entity_id: switch.bedroom_grow_light
     domain: switch
     for:
-      hours: 2
-      minutes: 30
+      hours: 3
+      minutes: 0
       seconds: 0
   condition: []
   action:
@@ -499,7 +511,7 @@
   description: ''
   trigger:
   - platform: numeric_state
-    entity_id: sensor.living_room_battery_level
+    entity_id: sensor.camera_2_battery_level
     above: '90'
   condition: []
   action:
@@ -514,7 +526,7 @@
   trigger:
   - platform: numeric_state
     below: '20'
-    entity_id: sensor.kitchen_battery_level
+    entity_id: sensor.camera_1_battery_level
   - platform: state
     entity_id: switch.bedroom_grow_light_2
     from: 'on'
@@ -532,7 +544,7 @@
   description: ''
   trigger:
   - platform: numeric_state
-    entity_id: sensor.kitchen_battery_level
+    entity_id: sensor.camera_1_battery_level
     above: '90'
   condition: []
   action:
@@ -575,8 +587,6 @@
   description: ''
   trigger:
   - platform: sun
-    event: sunrise
-  - platform: sun
     event: sunset
   condition: []
   action:
@@ -587,61 +597,10 @@
     data: {}
     entity_id: switch.living_room_night_vision
   mode: single
-- id: '1606684974929'
-  alias: Motion Video capture on
-  description: ''
-  trigger:
-  - platform: state
-    from: 'off'
-    entity_id: binary_sensor.ip_cam_2_motion
-    to: 'on'
-    for: '1'
-  - platform: state
-    entity_id: binary_sensor.ip_cam_motion
-    from: 'off'
-    to: 'on'
-    for: '1'
-  - platform: state
-    entity_id: binary_sensor.living_room_motion_detector
-    from: 'off'
-    to: 'on'
-    for: '1'
-  condition:
-  - condition: state
-    entity_id: group.adults
-    state: away
-  action:
-  - service: switch.turn_on
-    data: {}
-    entity_id: switch.ip_webcam_video_recording
-  - service: switch.turn_on
-    data: {}
-    entity_id: switch.ip_webcam_video_recording_2
-  mode: single
-- id: '1606685011745'
-  alias: Motion Video capture off
-  description: ''
-  trigger:
-  - platform: state
-    entity_id: group.adults
-    from: away
-    to: home
-    for: '600'
-  condition: []
-  action:
-  - service: switch.turn_off
-    data: {}
-    entity_id: switch.ip_webcam_video_recording
-  - service: switch.turn_off
-    data: {}
-    entity_id: switch.ip_webcam_video_recording_2
-  mode: single
 - id: '1607294671653'
   alias: Webcam Nightmode off
   description: ''
   trigger:
-  - platform: sun
-    event: sunset
   - platform: sun
     event: sunrise
     offset: '3600'
@@ -653,4 +612,263 @@
   - service: switch.turn_off
     data: {}
     entity_id: switch.living_room_night_vision
+  mode: single
+- id: '1608171644879'
+  alias: Turn on camera motion sensors
+  description: ''
+  trigger:
+  - platform: state
+    entity_id: group.adults
+    from: home
+    to: not_home
+    for: '600'
+  - platform: state
+    entity_id: input_boolean.set_vacation
+    from: '0'
+    to: '1'
+  condition: []
+  action:
+  - service: switch.turn_on
+    data: {}
+    entity_id: switch.camera_1
+  - service: switch.turn_on
+    data: {}
+    entity_id: switch.camera_2
+  mode: single
+- id: '1608227180355'
+  alias: Turn off camera motion sensors
+  description: ''
+  trigger:
+  - platform: state
+    entity_id: group.adults
+    from: not_home
+    to: home
+    for: '1'
+  - platform: state
+    entity_id: input_boolean.set_vacation
+    from: '1'
+    to: '0'
+  condition: []
+  action:
+  - service: switch.turn_off
+    data: {}
+    entity_id: switch.camera_1
+  - service: switch.turn_off
+    data: {}
+    entity_id: switch.camera_2
+  mode: single
+- id: '1608387074571'
+  alias: Manually resume thermostat schedule
+  description: ''
+  trigger:
+  - platform: state
+    entity_id: input_boolean.resume_thermostat
+    from: 'off'
+    for: '1'
+    to: 'on'
+  condition: []
+  action:
+  - service: ecobee.resume_program
+    data:
+      entity_id: climate.living_room
+      resume_all: 'true'
+  - service: input_boolean.turn_off
+    data: {}
+    entity_id: input_boolean.resume_thermostat
+  mode: single
+- id: '1608664706196'
+  alias: Motion detection
+  description: ''
+  trigger:
+  - entity_id: binary_sensor.bin_kitchen_cam_motion
+    from: 'off'
+    platform: state
+    to: 'on'
+  - platform: state
+    entity_id: binary_sensor.living_room_motion_detector
+    from: 'off'
+    to: 'on'
+  - platform: state
+    entity_id: binary_sensor.bin_living_room_cam_motion
+    from: 'off'
+    to: 'on'
+  - platform: state
+    entity_id: sensor.aeon_labs_zw100_multisensor_6_burglar
+    to: '8'
+    from: '0'
+  condition:
+  - condition: state
+    entity_id: group.adults
+    state: not_home
+  action:
+  - data:
+      message: There is motion in the house and no one is home.
+    service: notify.mobile_app_eric_phone
+  mode: single
+- id: '1608674816518'
+  alias: Request cleaning when not home
+  description: ''
+  trigger:
+  - platform: state
+    entity_id: group.adults
+    from: home
+    to: not_home
+  condition:
+  - condition: time
+    after: 00:01
+    before: '23:59'
+    weekday:
+    - mon
+    - tue
+    - wed
+    - thu
+    - fri
+    - sat
+    - sun
+  action:
+  - service: notify.mobile_app_eric_phone
+    data:
+      message: Would you like to start vacuuming now?
+      data:
+        actions:
+        - action: clean
+          title: 'Yes'
+        - action: ignore
+          title: 'No'
+  mode: single
+- id: '1608677727051'
+  alias: Request cleaning event listener
+  description: ''
+  trigger:
+  - platform: event
+    event_type: mobile_app_notification_action
+    event_data:
+      action: clean
+  condition: []
+  action:
+  - device_id: 620b64f588594796a6ce53c4d95b9c9d
+    domain: vacuum
+    entity_id: vacuum.higgins
+    type: clean
+  mode: single
+- id: '1608732666698'
+  alias: Circulate office air
+  description: ''
+  trigger:
+  - platform: state
+    entity_id: climate.living_room
+    attribute: fan
+    from: 'off'
+    to: 'on'
+  condition:
+  - condition: and
+    conditions:
+    - condition: state
+      entity_id: fan.guest_bedroom_fan
+      state: 'off'
+    - condition: or
+      conditions:
+      - condition: state
+        entity_id: group.adults
+        state: away
+      - condition: state
+        entity_id: binary_sensor.office_occupancy
+        state: 'off'
+  action:
+  - service: fan.turn_on
+    data:
+      speed: 4
+      direction: reverse
+    entity_id: fan.guest_bedroom_fan
+  - wait_template: '300'
+  - service: fan.turn_off
+    data:
+      entity_id: fan.master_bedroom_fan
+    entity_id: fan.guest_bedroom_fan
+  mode: single
+- id: '1611499994467'
+  alias: Restore fan scene
+  description: ''
+  trigger:
+  - platform: event
+    event_type: zwave.scene_activated
+    event_data:
+      entity_id: zwave.aeon_labs_zw129_wallmote_duo_2
+      node_id: 10
+      scene_id: 1
+      scene_data: 2
+  - platform: event
+    event_type: zwave.scene_activated
+    event_data:
+      entity_id: zwave.aeon_labs_zw129_wallmote_duo_2
+      node_id: 10
+      scene_id: 2
+      scene_data: 2
+  - platform: state
+    entity_id: input.resume_fan_scene
+    from: '0'
+    to: '1'
+    for: '1'
+  condition: []
+  action:
+  - service: scene.turn_on
+    data:
+      entity_id: scene.before_cooking
+  - service: input_boolean.turn_off
+    target:
+      entity_id: input_boolean.resume_fan_scene
+  mode: single
+- id: '1611975639343'
+  alias: Bedroom wallmote light
+  description: ''
+  trigger:
+  - platform: event
+    event_type: zwave.scene_activated
+    event_data:
+      entity_id: zwave.aeon_labs_zw129_wallmote_duo
+      node_id: 9
+      scene_id: 1
+      scene_data: 0
+  condition: []
+  action:
+  - type: toggle
+    device_id: ccd5d0d226fb4d17b9cb910a51d7839f
+    entity_id: light.master_bedroom_fan_light
+    domain: light
+  mode: single
+- id: '1611975702064'
+  alias: Bedroom wallmote fan
+  description: ''
+  trigger:
+  - platform: event
+    event_type: zwave.scene_activated
+    event_data:
+      entity_id: zwave.aeon_labs_zw129_wallmote_duo
+      node_id: 9
+      scene_id: 2
+      scene_data: 0
+  condition: []
+  action:
+  - device_id: ccd5d0d226fb4d17b9cb910a51d7839f
+    domain: fan
+    entity_id: fan.master_bedroom_fan
+    type: turn_off
+  mode: single
+- id: '1612272783907'
+  alias: Bedroom wallmote fan on
+  description: ''
+  trigger:
+  - platform: event
+    event_type: zwave.scene_activated
+    event_data:
+      entity_id: zwave.aeon_labs_zw129_wallmote_duo
+      node_id: 9
+      scene_id: 2
+      scene_data: 2
+  condition: []
+  action:
+  - service: fan.turn_on
+    data:
+      speed: 4
+    entity_id: fan.master_bedroom_fan
   mode: single
